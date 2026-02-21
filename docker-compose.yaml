@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: simpleapp-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: simpleapp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./back
+    container_name: simpleapp-backend
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - ./back/.env
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./front
+    container_name: simpleapp-frontend
+    restart: always
+    ports:
+      - "3000:80"
+
+volumes:
+  postgres_data:
