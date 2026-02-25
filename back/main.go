@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -34,19 +35,32 @@ func main() {
     pass := getSecret("/run/secrets/postgres_pass")
 	dbName := os.Getenv("DATABASE_NAME")
     host := os.Getenv("DATABASE_HOST")
+	log.Printf("DEBUG: The host read from env is: '%s'", host) 
+
+	if host == "" {
+		log.Fatal("DATABASE_HOST is empty! Check your Docker Compose env_file settings.")
+	}
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=disable", user, pass, host, dbName)
 
 	var err error
-	db, err = sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal(err)
+	for i := 0; i < 5; i++ {
+		db, err = sql.Open("postgres", connStr)
+		if err == nil {
+			err = db.Ping() // Actually test the connection
+		}
+
+		if err == nil {
+			log.Println("Successfully connected to the database!")
+			break
+		}
+
+		log.Printf("DB not ready... retrying in 2s (Attempt %d/5): %v", i+1, err)
+		time.Sleep(2 * time.Second)
 	}
 
-	err = db.Ping()
 	if err != nil {
-		log.Fatalf("Ping failed: %v", err)
+		log.Fatal("Could not connect to DB after retries:", err)
 	}
-
 
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 	http.HandleFunc("/submit", submitHandler)

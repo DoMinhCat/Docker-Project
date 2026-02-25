@@ -21,6 +21,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
+      start_period: 5s
 
   backend:
     build: ./back
@@ -35,6 +36,16 @@ services:
       - postgres_pass
     env_file:
       - ./back/.env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 3s
     ports:
       - "8080:8080"
 
