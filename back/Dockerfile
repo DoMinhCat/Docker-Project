@@ -1,21 +1,19 @@
 # Build stage
-FROM golang:1.22-alpine AS builder
+FROM golang:1.25-alpine AS build
 
-WORKDIR /app
+WORKDIR /build
 
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY . .
+COPY *.go ./
 
-RUN go build -o app
+RUN CGO_ENABLED=0 GOOS=linux go build -o backend-app
 
 # Run stage
 FROM alpine:latest
 
-WORKDIR /root/
-
-COPY --from=builder /app/app .
+COPY --from=build /build/backend-app ./
 EXPOSE 8080
 
-CMD ["./app"]
+CMD ["./backend-app"]

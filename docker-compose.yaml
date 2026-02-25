@@ -1,25 +1,33 @@
-version: "3.9"
-
 services:
-  db:
+  postgres-db:
     image: postgres:16
     container_name: simpleapp-db
-    restart: always
+    networks:
+      - simple-app-network
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: /run/secrets/postgres_user
+      POSTGRES_PASSWORD: /run/secrets/postgres_pass
       POSTGRES_DB: simpleapp
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # TODO: create a init_db.sql to create a table and mount it in postgres
+      # example of mySQL: ./esgi_db.sql:/docker-entrypoint-initdb.d/esgi_db.sql
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "postgres"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
   backend:
     build: ./back
     container_name: simpleapp-backend
-    restart: always
+    networks:
+      - simple-app-network
     depends_on:
-      - db
+      postgres-db:
+        condition: service_healthy
     env_file:
       - ./back/.env
     ports:
@@ -28,9 +36,18 @@ services:
   frontend:
     build: ./front
     container_name: simpleapp-frontend
-    restart: always
     ports:
       - "3000:80"
 
 volumes:
   postgres_data:
+
+networks:
+  simple-app-network:
+    driver: bridge
+
+secrets:
+  postgres_user:
+    file: ./postgres_user.secret
+  postgres_pass:
+    file: ./postgres_pass.secret
