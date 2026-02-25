@@ -3,10 +3,12 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	_ "github.com/lib/pq"
 )
@@ -19,8 +21,20 @@ type User struct {
 
 var db *sql.DB
 
+func getSecret(path string) string {
+    content, err := os.ReadFile(path)
+    if err != nil {
+        log.Fatalf("Failed to read secret at %s: %v", path, err)
+    }
+    return strings.TrimSpace(string(content))
+}
+
 func main() {
-	connStr := os.Getenv("DATABASE_URL")
+	user := getSecret("/run/secrets/postgres_user")
+    pass := getSecret("/run/secrets/postgres_pass")
+	dbName := os.Getenv("DATABASE_NAME")
+    host := os.Getenv("DATABASE_HOST")
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=disable", user, pass, host, dbName)
 
 	var err error
 	db, err = sql.Open("postgres", connStr)
@@ -30,10 +44,9 @@ func main() {
 
 	err = db.Ping()
 	if err != nil {
-		log.Fatal("Cannot connect to DB:", err)
+		log.Fatalf("Ping failed: %v", err)
 	}
 
-	createTable()
 
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 	http.HandleFunc("/submit", submitHandler)
@@ -41,20 +54,6 @@ func main() {
 
 	log.Println("Server running at http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
-}
-
-func createTable() {
-	query := `
-	CREATE TABLE IF NOT EXISTS users (
-		id SERIAL PRIMARY KEY,
-		name TEXT NOT NULL,
-		age INT NOT NULL
-	);`
-
-	_, err := db.Exec(query)
-	if err != nil {
-		log.Fatal(err)
-	}
 }
 
 func submitHandler(w http.ResponseWriter, r *http.Request) {
