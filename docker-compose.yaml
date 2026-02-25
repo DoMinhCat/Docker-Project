@@ -1,36 +1,69 @@
-version: "3.9"
-
 services:
-  db:
+  postgres-db:
     image: postgres:16
     container_name: simpleapp-db
-    restart: always
+    networks:
+      - simple-app-network
+    secrets:
+      - postgres_user
+      - postgres_pass
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER_FILE: /run/secrets/postgres_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_pass
       POSTGRES_DB: simpleapp
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./simple-app.sql:/docker-entrypoint-initdb.d/simple-app.sql
     ports:
-      - "5433:5433"
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
   backend:
     build: ./back
     container_name: simpleapp-backend
-    restart: always
+    networks:
+      - simple-app-network
     depends_on:
-      - db
+      postgres-db:
+        condition: service_healthy
+    secrets:
+      - postgres_user
+      - postgres_pass
     env_file:
       - ./back/.env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 3s
     ports:
       - "8088:8080"
 
   frontend:
     build: ./front
     container_name: simpleapp-frontend
-    restart: always
     ports:
       - "3002:80"
 
 volumes:
   postgres_data:
+
+networks:
+  simple-app-network:
+    driver: bridge
+
+secrets:
+  postgres_user:
+    file: ./postgres_user.secret
+  postgres_pass:
+    file: ./postgres_pass.secret

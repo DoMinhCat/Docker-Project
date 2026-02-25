@@ -1,0 +1,13 @@
+START TRANSACTION;
+
+CREATE TABLE IF NOT EXISTS users (
+		id SERIAL PRIMARY KEY,
+		name VARCHAR(255) NOT NULL,
+		age INT NOT NULL
+);
+
+INSERT INTO users (name, age) VALUES
+('Romain Lenoir', 18),
+('titi', 51);
+
+COMMIT;
