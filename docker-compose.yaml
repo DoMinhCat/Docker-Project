@@ -10,8 +10,7 @@ services:
       POSTGRES_DB: simpleapp
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # TODO: create a init_db.sql to create a table and mount it in postgres
-      # example of mySQL: ./esgi_db.sql:/docker-entrypoint-initdb.d/esgi_db.sql
+      - ./simple-app.sql:/docker-entrypoint-initdb.d/simple-app.sql
     ports:
       - "5432:5432"
     healthcheck:
