@@ -23,19 +23,19 @@ type User struct {
 var db *sql.DB
 
 func getSecret(path string) string {
-    content, err := os.ReadFile(path)
-    if err != nil {
-        log.Fatalf("Failed to read secret at %s: %v", path, err)
-    }
-    return strings.TrimSpace(string(content))
+	content, err := os.ReadFile(path)
+	if err != nil {
+		log.Fatalf("Failed to read secret at %s: %v", path, err)
+	}
+	return strings.TrimSpace(string(content))
 }
 
 func main() {
 	user := getSecret("/run/secrets/postgres_user")
-    pass := getSecret("/run/secrets/postgres_pass")
+	pass := getSecret("/run/secrets/postgres_pass")
 	dbName := os.Getenv("DATABASE_NAME")
-    host := os.Getenv("DATABASE_HOST")
-	log.Printf("DEBUG: The host read from env is: '%s'", host) 
+	host := os.Getenv("DATABASE_HOST")
+	log.Printf("DEBUG: The host read from env is: '%s'", host)
 
 	if host == "" {
 		log.Fatal("DATABASE_HOST is empty! Check your Docker Compose env_file settings.")
