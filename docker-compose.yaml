@@ -4,9 +4,12 @@ services:
     container_name: simpleapp-db
     networks:
       - simple-app-network
+    secrets:
+      - postgres_user
+      - postgres_pass
     environment:
-      POSTGRES_USER: /run/secrets/postgres_user
-      POSTGRES_PASSWORD: /run/secrets/postgres_pass
+      POSTGRES_USER_FILE: /run/secrets/postgres_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_pass
       POSTGRES_DB: simpleapp
     volumes:
       - postgres_data:/var/lib/postgresql/data
