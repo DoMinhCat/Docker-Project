@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.22-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
@@ -8,14 +8,21 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o app
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o server ./main.go
 
 # Run stage
-FROM alpine:latest
+FROM alpine:3.20
 
-WORKDIR /root/
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-COPY --from=builder /app/app .
+WORKDIR /home/appuser
+
+COPY --from=builder /app/server .
+
+RUN chown appuser:appgroup server
+
+USER appuser
+
 EXPOSE 8080
 
-CMD ["./app"]
+ENTRYPOINT ["./server"]
