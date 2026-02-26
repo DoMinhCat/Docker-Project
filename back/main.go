@@ -63,11 +63,17 @@ func main() {
 	}
 
 	http.Handle("/", http.FileServer(http.Dir("./static")))
+	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/submit", submitHandler)
 	http.HandleFunc("/users", listUsersHandler)
 
 	log.Println("Server running at http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode("server is running")
 }
 
 func submitHandler(w http.ResponseWriter, r *http.Request) {
